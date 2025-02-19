@@ -3,51 +3,38 @@
  * 
  * devファイルから何回読み込んだかを示す, 読み取り専用のキャラクタデバイスを作成する
  */
+#include "chardev.h"
+
 #include <linux/atomic.h>	// アトミック操作（排他制御なしにデータを変更する）
 #include <linux/cdev.h>		// キャラクタデバイス（cdev）の管理を行う
 #include <linux/delay.h>	// 遅延処理を行う関数を提供する
 #include <linux/device.h>	// デバイスドライバの管理を行う
-#include <linux/fs.h>		// ファイルシステム関連の機能を提供する
 #include <linux/init.h>		// カーネルモジュールの初期化, クリーンアップ関連のマクロや関数を提供する
 #include <linux/kernel.h>	// カーネル関連の汎用的なマクロ, 関数を提供する
 #include <linux/module.h>
 #include <linux/printk.h>
-#include <linux/types.h>	// カーネル内で使用されるデータ型を定義する
 #include <linux/uaccess.h>	// ユーザ空間とのデータのやりとり（コピー）を行う回数を提供する
 #include <linux/version.h>	// カーネルのバージョンを判定するためのマクロを提供する
 
 #include <asm/errno.h>		// カーネル内で使用されるエラーコードを提供する
 
+//! デバイスドライバに割り当てられるメジャー番号
+int major;
+
+//! デバイスへの複数アクセスを防ぐために使用
+atomic_t already_open = ATOMIC_INIT(CDEV_NOT_USED);
+
+//! デバイスが返すメッセージ
+char msg[BUF_LEN + 1];
+
+//! device_create()に使用するクラス構造体
+struct class *cls;
+
 /**
- * プロトタイプ -- 通常は.hファイルに記述される
+ * @struct file_operations
+ * @brief コールバック関数を登録するためのfile_operations構造体の宣言
  */
-static int device_open(struct inode *, struct file *);
-static int device_release(struct inode *, struct file *);
-static ssize_t device_read(struct file *, char __user *, size_t, loff_t *);
-static ssize_t device_write(struct file *, const char __user *, size_t, loff_t *);
-
-#define SUCCESS 0
-#define DEVICE_NAME "chardev"	/* /proc/devicesに表示されるデバイス名 */
-#define BUF_LEN 80				/* デバイスからのメッセージの最大長 */
-
-static int major; /* デバイスドライバに割り当てられたメジャー番号 */
-
-enum {
-	CDEV_NOT_USED,
-	CDEV_EXCLUSIVE_OPEN,
-};
-
-/* デバイスへの複数アクセスを防ぐために使用 */
-static atomic_t already_open = ATOMIC_INIT(CDEV_NOT_USED);
-
-/* デバイスが返すメッセージ */
-static char msg[BUF_LEN + 1];
-
-/* device_create()に使用するクラス構造体 */
-static struct class *cls;
-
-/* コールバック関数の登録 */
-static struct file_operations chardev_fops = {
+struct file_operations chardev_fops = {
 	.read = device_read,
 	.write = device_write,
 	.open = device_open,
