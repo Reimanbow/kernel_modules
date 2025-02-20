@@ -19,7 +19,7 @@
  */
 #define BUF_LEN 80
 /**
- * @def 成功フラグ. file_operations構造体に定義する関数が成功したときに返す
+ * @def 成功フラグ. 関数が成功したときに返す
  */
 #define SUCCESS 0
 
@@ -34,7 +34,7 @@ static int device_open(struct inode *, struct file *);
 static int device_release(struct inode *, struct file *);
 
 /**
- * すでにdevファイルをオープンしているプロセスが, そのdevファイルから読み込もうとしたときに呼び出される
+ * @brief すでにdevファイルをオープンしているプロセスが, そのdevファイルから読み込もうとしたときに呼び出される
  */
 static ssize_t device_read(struct file *, char __user *, size_t, loff_t *);
 
@@ -54,14 +54,11 @@ enum {
 //! デバイスドライバに割り当てられるメジャー番号
 extern int major;
 
-/**
- * @brief デバイスへの複数アクセスを防ぐために使用
- */
+//! デバイスへの複数アクセスを防ぐために使用
 extern atomic_t already_open;
 
 //! デバイスが返すメッセージ
 extern char msg[BUF_LEN + 1];
-
 
 //! device_create()に使用するクラス構造体
 extern struct class *cls;
