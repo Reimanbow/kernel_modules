@@ -29,19 +29,3 @@ extern char procfs_buffer[PROCFS_MAX_SIZE];
 
 //! バッファのサイズ
 extern unsigned long procfs_buffer_size;
-
-/**
- * @brief readが呼ばれたときの処理
- */
-static ssize_t procfile_read(struct file *, char __user *, size_t, loff_t *);
-
-/**
- * @brief writeが呼ばれたときの処理
- */
-static ssize_t procfile_write(struct file *, const char __user *, size_t, loff_t *);
-
-#ifdef HAVE_PROC_OPS
-extern const struct proc_ops proc_file_fops;
-#else
-extern const struct file_operations proc_file_fops;
-#endif
