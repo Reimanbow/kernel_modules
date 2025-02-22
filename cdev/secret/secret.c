@@ -1,12 +1,18 @@
 /**
- * @file cdev-time.c
+ * @file secret.c
  * 
- * cat /dev/time を実行すると, 現在の日時を取得できるデバイス
+ * write()で書き込んだデータを保存し, 1回だけread()で読み出せるデバイス
  */
-#include "cdev-time.h"
+#include "secret.h"
 
 //! 割り当てられるメジャー番号
 int major;
+
+//! データを受け取るバッファ
+char dev_buffer[MAX_BUFFER_SIZE];
+
+//! バッファのサイズ
+size_t buffer_size = 0;
 
 //! デバイスへの複数アクセスを防ぐための状態を持つ
 static atomic_t already_open = ATOMIC_INIT(CDEV_NOT_USED);
@@ -39,21 +45,47 @@ static int device_release(struct inode *inode, struct file *file) {
 }
 
 /**
- * @brief readが呼び出されたときの処理
+ * @brief read()が呼び出されたときの処理
  */
 static ssize_t device_read(struct file *file, char __user *buffer,
 						   size_t length, loff_t *offset)
 {
-	char time_str[64];
-	time64_t now = ktime_get_real_seconds();
-	struct tm tm_time;
-
-	time64_to_tm(now, 0, &tm_time);
-	snprintf(time_str, sizeof(time_str), "%04ld-%02d-%02d %02d:%02d:%02d\n",
-			tm_time.tm_year + 1900, tm_time.tm_mon + 1, tm_time.tm_mday,
-			tm_time.tm_hour + 9, tm_time.tm_min, tm_time.tm_sec);
+	if (*offset || buffer_size == 0) {
+		pr_debug("dev read: END\n");
+		*offset = 0;
+		return 0;
+	}
 	
-	return simple_read_from_buffer(buffer, length, offset, time_str, strlen(time_str));
+	size_t read_buffer_size = min(buffer_size, length);
+	if (copy_to_user(buffer, dev_buffer, read_buffer_size)) {
+		return -EFAULT;
+	}
+	*offset += read_buffer_size;
+
+	pr_debug("read %lu bytes\n", read_buffer_size);
+
+	/* カーネル空間のバッファを空にする */
+	snprintf(dev_buffer, buffer_size, "");
+	buffer_size = 0;
+
+	return read_buffer_size;
+}
+
+/**
+ * @brief write()が呼び出されたときの処理
+ */
+static ssize_t device_write(struct file *file, const char __user *buffer,
+							size_t length, loff_t *offset)
+{
+	buffer_size = min(MAX_BUFFER_SIZE, length);
+
+	if (copy_from_user(dev_buffer, buffer, buffer_size)) {
+		return -EFAULT;
+	}
+	*offset += buffer_size;
+
+	pr_debug("write %lu bytes\n", buffer_size);
+	return buffer_size;
 }
 
 /**
@@ -64,6 +96,7 @@ struct file_operations cdev_fops = {
 	.open = device_open,
 	.release = device_release,
 	.read = device_read,
+	.write = device_write,
 };
 
 /**
