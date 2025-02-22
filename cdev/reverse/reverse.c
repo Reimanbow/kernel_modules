@@ -34,9 +34,6 @@ char rev_msg[BUF_LEN + 1];
 //! device_create()に使用するクラス構造体
 struct class *cls;
 
-//! コールバック関数を登録するためのfile_operations構造体
-struct file_operations chardev_fops;
-
 /**
  * @struct file_operations
  * @brief コールバック関数を登録する
