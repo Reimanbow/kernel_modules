@@ -1,7 +1,6 @@
 ## Linuxカーネル作ってみる
 
 参考資料
-- https://qiita.com/nouernet/items/77bdea90e5423d153c8d
 - https://sysprog21.github.io/lkmpg/
 
 ---
@@ -10,7 +9,10 @@
 
 - basic: カーネルログにメッセージを出力する程度のモジュール
 - cdev: キャラクタデバイス
-- procfs: /procに情報を出力する
+- procfs: /procの制御などを行うモジュール
+- syscall: システムコール関連
+- sysfs: /sysの制御などを行うモジュール
+- thread: マルチスレッド, 排他制御
 
 ## カーネルモジュールのロードとアンロード
 
@@ -43,6 +45,9 @@ $ journalctl -f
 
 # 1時間以内のログから検索する
 $ journalctl --since "1 hour ago" | grep kernel
+
+# 直近のカーネルのログを確認する
+$ sudo dmesg -w
 ```
 
 カーネルからアンロードする
