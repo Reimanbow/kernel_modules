@@ -205,7 +205,7 @@ static int __init bottomhalf_init(void) {
 #endif
 	}
 
-	return ret;
+	return 0;
 
 	/* エラー時にリソースを解放するための処理 */
 #ifdef NO_GPIO_REQUEST_ARRAY
@@ -225,13 +225,13 @@ fail3:
 	free_irq(button_irqs[0], NULL);
 
 fail2:
-	gpio_free_array(buttons, ARRAY_SIZE(leds));
+	gpio_free_array(buttons, ARRAY_SIZE(buttons));
 
 fail1:
 	gpio_free_array(leds, ARRAY_SIZE(leds));
 #endif
 
-	return 0;
+	return ret;
 }
 
 /**
