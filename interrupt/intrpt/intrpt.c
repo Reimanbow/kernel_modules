@@ -79,7 +79,7 @@ static int __init intrpt_init(void) {
 	}
 
 	/* ボタンGPIOのリクエスト */
-#ifdef NO_GPIO_REQUESTS_ARRAY
+#ifdef NO_GPIO_REQUEST_ARRAY
 	/* GPIO 17をリクエスト */
 	ret = gpio_request(buttons[0].gpio, buttons[0].label);
 	if (ret) {
